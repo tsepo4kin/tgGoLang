@@ -1,13 +1,13 @@
 package telegram
 
 import (
+	"encoding/json"
 	"io"
 	"net/http"
 	"net/url"
 	"path"
 	"strconv"
-
-	"tggo/lib/error" // e???
+	"tgGoLang/lib/error"
 )
 
 type Client struct {
@@ -33,8 +33,8 @@ func newBasePath(token string) string {
 	return "bot" + token
 }
 
-func (c *Client) Updates(offset int, limit int) ([]Update, error) {
-	defer func() {err = error.WrapIfErr("can't do request", err)}()
+func (c *Client) Updates(offset int, limit int) (updates []Update, err error) {
+	defer func() {err = errorWrapper.WrapIfErr("can't do request", err)}()
 	
 	q := url.Values{}
 	q.Add("offset", strconv.Itoa(offset))
@@ -45,30 +45,30 @@ func (c *Client) Updates(offset int, limit int) ([]Update, error) {
 		return nil, err
 	}
 
-	var res UpdateResponse
+	var res UpdatesResponse
 
 	if err := json.Unmarshal(data, &res); err != nil {
 		return nil, err
 	}
 
-	return res.Results, nil
+	return res.Result, nil
 }
 
-func (c *Client) SendMessage(chatId int, text string) {
+func (c *Client) SendMessage(chatId int, text string) error {
 	q := url.Values{}
 	q.Add("chat_id", strconv.Itoa(chatId))
 	q.Add("text", text)
 
 	_, err := c.doRequest(sendMessageMethod, q)
 	if err != nil {
-		return error.Wrap("can't send message", err)
+		return errorWrapper.Wrap("can't send message", err)
 	}
 
 	return nil
 }
 
 func (c *Client) doRequest(method string, query url.Values) (data []byte, err error) {
-	defer func() {err = error.WrapIfErr("can't do request", err)}()
+	defer func() {err = errorWrapper.WrapIfErr("can't do request", err)}()
 	
 	u := url.URL{
 		Scheme: "https",
@@ -83,7 +83,7 @@ func (c *Client) doRequest(method string, query url.Values) (data []byte, err er
 
 	req.URL.RawQuery = query.Encode()
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := c.client.Do(req)
 	if err != nil {
 		return nil, err
 	}

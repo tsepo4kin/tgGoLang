@@ -3,18 +3,22 @@ package main
 import (
 	"flag"
 	"log"
+	tgClient "tgGoLang/clients/telegram"
+	"tgGoLang/events/telegram"
+	"tgGoLang/consumer/eventConsumer"
+	"tgGoLang/storage/files"
 )
 
 const (
 	tgBotHost = "api.telegram.org"
-	storagePath = "/telegram"
+	storagePath = "files_storage"
 	batchSize = 100
 )
 
 func main() {
 	eventsProcessor := telegram.New(
 		tgClient.New(tgBotHost, mustToken()), 
-		files.New(storagePath)
+		files.New(storagePath),
 	)
 
 	log.Printf("service started")
@@ -34,9 +38,9 @@ func main() {
 
 func mustToken() string {
 	token := flag.String(
-		"token-bot-token", 
+		"tg-bot-token", 
 		"", 
-		"token for access to telegram bot"
+		"token for access to telegram bot",
 	)
 
 	flag.Parse()
@@ -45,5 +49,5 @@ func mustToken() string {
 		log.Fatal("token is not defined")
 	}
 
-	return token
+	return *token
 }
